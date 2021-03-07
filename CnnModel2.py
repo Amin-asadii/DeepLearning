@@ -6,35 +6,6 @@ from torchvision import transforms
 import torch.nn as nn
 
 
-
-# Params
-batch_size = 64
-n_class = 10
-lr = 0.001
-num_epochs = 100
-
-
-
-transform = transforms.Compose(
-    [transforms.ToTensor(),
-     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-
-trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
-                                        download=True, transform=transform)
-
-trainloader = torch.utils.data.DataLoader(trainset, batch_size=4,
-                                          shuffle=True, num_workers=2)
-
-testset = torchvision.datasets.CIFAR10(root='./data', train=False,
-                                       download=True, transform=transform)
-
-testloader = torch.utils.data.DataLoader(testset, batch_size=4,
-                                         shuffle=False, num_workers=2)
-
-classes = ('plane', 'car', 'bird', 'cat',
-           'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
-
-
 # Convolutional neural network
 class convnet(nn.Module):
     def __init__(self):
@@ -59,44 +30,75 @@ class convnet(nn.Module):
         y    = self.fc(out2)
         return y
 
+
 if __name__ == "__main__":
+    # Params
+    batch_size = 64
+    n_class = 10
+    lr = 0.001
+    num_epochs = 10
+
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+    transform = transforms.Compose(
+        [transforms.ToTensor(),
+         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+
+    trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
+                                            download=True, transform=transform)
+
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+                                              shuffle=True, num_workers=2)
+
+    testset = torchvision.datasets.CIFAR10(root='./data', train=False,
+                                           download=True, transform=transform)
+
+    testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+                                             shuffle=False, num_workers=2)
+
+    classes = ('plane', 'car', 'bird', 'cat',
+               'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
     # Model CNN
     convmodel = convnet()
+    convmodel.to(device)
 
     # loss
     loss_fn = nn.CrossEntropyLoss()
 
     # Optim
-    optimizer_fn = torch.optim.Adam(convmodel.parameters(), lr=lr)
-
-
-    lr_sch = torch.optim.lr_scheduler.StepLR(optimizer_fn, 1, gamma=0.5)
+    optimizer_fn = torch.optim.Adam(convmodel.parameters(), lr=0.0001)
+    lr_sch = torch.optim.lr_scheduler.StepLR(optimizer_fn, 5, gamma=0.5)
 
     num_steps = len(trainloader)
 
     for i in range(num_epochs):
         convmodel.train()
-
         for j, (imgs, lbls) in enumerate(trainloader):
+            optimizer_fn.zero_grad()
             #print(imgs.shape)
+            imgs = imgs.to(device)
+            lbls = lbls.to(device)
             out = convmodel(imgs)
             loss_val = loss_fn(out, lbls)
-            optimizer_fn.zero_grad()
             loss_val.backward()
             optimizer_fn.step()
             if (j + 1) % 2 == 0:
                 print('Train, Epoch [{}/{}] Step [{}/{}] Loss: {:.4f}'.
                       format(i + 1, num_epochs, j + 1, num_steps, loss_val.item()))
-            if j == 10:
-                break
+        lr_sch.step()
+            # if j == 10:
+            #     break
+
     convmodel.eval()
     corrects = 0
     num_steps = len(testloader)
     for j, (imgs, lbls) in enumerate(testloader):
+        imgs = imgs.to(device)
+        lbls = lbls.to(device)
         out = convmodel(imgs)
         predicted = torch.argmax(out, 1)
         corrects += torch.sum(predicted == lbls)
         print('Step [{}/{}] Acc {:.4f}: '.format(j+1, num_steps, 100.*corrects/((j+1)*batch_size)))
 
-    torch.save()
+    # torch.save()
