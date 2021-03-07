@@ -1,0 +1,102 @@
+import pandas as pd
+import numpy as np
+import torchvision
+import torch
+from torchvision import transforms
+import torch.nn as nn
+
+
+
+# Params
+batch_size = 64
+n_class = 10
+lr = 0.001
+num_epochs = 100
+
+
+
+transform = transforms.Compose(
+    [transforms.ToTensor(),
+     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+
+trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
+                                        download=True, transform=transform)
+
+trainloader = torch.utils.data.DataLoader(trainset, batch_size=4,
+                                          shuffle=True, num_workers=2)
+
+testset = torchvision.datasets.CIFAR10(root='./data', train=False,
+                                       download=True, transform=transform)
+
+testloader = torch.utils.data.DataLoader(testset, batch_size=4,
+                                         shuffle=False, num_workers=2)
+
+classes = ('plane', 'car', 'bird', 'cat',
+           'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+
+
+# Convolutional neural network
+class convnet(nn.Module):
+    def __init__(self):
+        super(convnet,self).__init__()
+
+        self.layer1 = nn.Sequential(nn.Conv2d(3, 16, 3, 1, 1),
+                                    nn.BatchNorm2d(16),
+                                    nn.ReLU(),
+                                    nn.MaxPool2d(2, 2))
+        self.layer2 = nn.Sequential(nn.Conv2d(16, 32, 3, 1, 1),
+                                    nn.BatchNorm2d(32),
+                                    nn.ReLU(),
+                                    nn.MaxPool2d(2, 2))
+        self.fc = nn.Linear(8*8*32, n_class)
+    def forward(self, x):
+
+        out1 = self.layer1(x)
+       # print(out1.shape)
+        out2 = self.layer2(out1)
+        out2 = out2.reshape(out2.size(0), -1)
+      #  print(out2.shape)
+        y    = self.fc(out2)
+        return y
+
+if __name__ == "__main__":
+
+    # Model CNN
+    convmodel = convnet()
+
+    # loss
+    loss_fn = nn.CrossEntropyLoss()
+
+    # Optim
+    optimizer_fn = torch.optim.Adam(convmodel.parameters(), lr=lr)
+
+
+    lr_sch = torch.optim.lr_scheduler.StepLR(optimizer_fn, 1, gamma=0.5)
+
+    num_steps = len(trainloader)
+
+    for i in range(num_epochs):
+        convmodel.train()
+
+        for j, (imgs, lbls) in enumerate(trainloader):
+            #print(imgs.shape)
+            out = convmodel(imgs)
+            loss_val = loss_fn(out, lbls)
+            optimizer_fn.zero_grad()
+            loss_val.backward()
+            optimizer_fn.step()
+            if (j + 1) % 2 == 0:
+                print('Train, Epoch [{}/{}] Step [{}/{}] Loss: {:.4f}'.
+                      format(i + 1, num_epochs, j + 1, num_steps, loss_val.item()))
+            if j == 10:
+                break
+    convmodel.eval()
+    corrects = 0
+    num_steps = len(testloader)
+    for j, (imgs, lbls) in enumerate(testloader):
+        out = convmodel(imgs)
+        predicted = torch.argmax(out, 1)
+        corrects += torch.sum(predicted == lbls)
+        print('Step [{}/{}] Acc {:.4f}: '.format(j+1, num_steps, 100.*corrects/((j+1)*batch_size)))
+
+    torch.save()
