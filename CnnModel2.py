@@ -36,8 +36,13 @@ if __name__ == "__main__":
     # Params
     batch_size = 64
     n_class = 10
+<<<<<<< HEAD
     lr = 0.0001
     num_epochs = 15
+=======
+    lr = 0.001
+    num_epochs = 10
+>>>>>>> 6f36b05123a78b69dbb7dbc983f146b4fda5b42c
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -68,7 +73,12 @@ if __name__ == "__main__":
     loss_fn = nn.CrossEntropyLoss()
 
     # Optim
+<<<<<<< HEAD
     optimizer_fn = torch.optim.SGD(convmodel.parameters(), lr=0.001, momentum=0.9)
+=======
+    optimizer_fn = torch.optim.Adam(convmodel.parameters(), lr=0.0001)
+    lr_sch = torch.optim.lr_scheduler.StepLR(optimizer_fn, 5, gamma=0.5)
+>>>>>>> 6f36b05123a78b69dbb7dbc983f146b4fda5b42c
 
   #  optimizer_fn = torch.optim.Adam(convmodel.parameters(), lr=0.0001)
     lr_sch = torch.optim.lr_scheduler.StepLR(optimizer_fn, 5, gamma=1)
@@ -103,3 +113,8 @@ if __name__ == "__main__":
         predicted = torch.argmax(out, 1)
         corrects += torch.sum(predicted == lbls)
         print('Step [{}/{}] Acc {:.4f}: '.format(j+1, num_steps, 100.*corrects/((j+1)*batch_size)))
+<<<<<<< HEAD
+=======
+
+    # torch.save()
+>>>>>>> 6f36b05123a78b69dbb7dbc983f146b4fda5b42c
