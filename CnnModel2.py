@@ -5,7 +5,7 @@ import torch
 from torchvision import transforms
 import torch.nn as nn
 
-
+#COD
 # Convolutional neural network
 class convnet(nn.Module):
     def __init__(self):
